@@ -1,0 +1,143 @@
+defaults:
+  - _self_
+  - wandb: private.yaml
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+
+name: "infoLDM_dm_control_hopper_nuisance"
+method: "infoLDMAction"
+method_kwargs:
+  state_dim: &signal_dim 32
+  # Per-control-step dimension. The frame-skip axis is encoded separately.
+  action_dim: 4
+  action_encoder_hidden_dim: 32
+  # Encode all ordered controller commands between consecutive rendered frames.
+  encode_action_sequences: true
+  input_dim: null
+  encoder_backbone: "resnet18"
+  rnn_hidden_dim: &rnn_hidden_dim 64
+  rnn_num_layers: 1
+  rnn_backbone: "lstm"
+  predictor_hidden_dim: 128
+  loss_type: "logdet"
+  # The physical conditional is nonlinear and only approximately Gaussian.
+  prediction_variance: 0.19
+  encoder_lr_multiplier: 1.0
+  rnn_lr_multiplier: 1.0
+  predictor_lr_multiplier: 1.0
+
+decoder_kwargs:
+  signal:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "signal"
+    input_dim: *signal_dim
+    output_dim: 7
+    backbone: "mlp"
+    backbone_kwargs:
+      hidden_dim: 256
+    lr: 0.0001
+    detach_gradient: true
+  velocity:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "velocity"
+    input_dim: *signal_dim
+    output_dim: 7
+    backbone: "mlp"
+    backbone_kwargs:
+      hidden_dim: 256
+    lr: 0.0001
+    detach_gradient: true
+  nuisance:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "nuisance"
+    input_dim: *signal_dim
+    output_dim: 12
+    backbone: "mlp"
+    backbone_kwargs:
+      hidden_dim: 256
+    lr: 0.0001
+    detach_gradient: true
+  image:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "observations"
+    input_dim: *signal_dim
+    output_dim: 3
+    backbone: "image"
+    backbone_kwargs:
+      image_size: 128
+      base_channels: 256
+    lr: 0.0001
+    loss_multiplier: 500
+    detach_gradient: true
+
+
+  signal_hidden:
+    loss_func: "mse"
+    input_variable: "estimates"
+    target_variable: "signal"
+    input_dim: *rnn_hidden_dim
+    output_dim: 7
+    backbone: "mlp"
+    backbone_kwargs:
+      hidden_dim: 256
+    lr: 0.0001
+    detach_gradient: true
+  velocity_hidden:
+    loss_func: "mse"
+    input_variable: "estimates"
+    target_variable: "velocity"
+    input_dim: *rnn_hidden_dim
+    output_dim: 7
+    backbone: "mlp"
+    backbone_kwargs:
+      hidden_dim: 256
+    lr: 0.0001
+    detach_gradient: true
+
+data:
+  dataset: "offline_dm_control_hopper_nuisance"
+  num_workers: 4
+  settings:
+    root: datasets/dm_control_hopper
+    normalization: "imagenet"
+
+optimizer:
+  name: "adam"
+  batch_size: 16
+  lr: 0.0001
+  weight_decay: 0.000001
+
+scheduler:
+  name: "warmup_cosine"
+  warmup_epochs: 3
+  interval: "epoch"
+
+checkpoint:
+  enabled: true
+  dir: "trained_models"
+  frequency: 1
+  keep_prev: false
+
+auto_resume:
+  enabled: false
+
+wandb:
+  enabled: false
+
+seed: 1
+max_epochs: 40
+val_check_interval: 1.0
+devices: [0]
+accelerator: "gpu"
+strategy: "auto"
+precision: "32-true"
+sync_batchnorm: false

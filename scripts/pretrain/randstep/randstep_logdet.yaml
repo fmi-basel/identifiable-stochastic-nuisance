@@ -1,0 +1,9 @@
+defaults:
+  - randstep
+  - _self_
+
+name: "infoLDM_randstep_nuisance_logdet"
+method_kwargs:
+  loss_type: "logdet"
+optimizer:
+  batch_size: 256

@@ -1,0 +1,6 @@
+defaults:
+  - hopper_nuisance
+  - _self_
+
+name: "next_observation_dm_control_hopper_nuisance"
+method: "nextObservation"

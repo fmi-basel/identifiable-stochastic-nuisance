@@ -1,0 +1,9 @@
+defaults:
+  - randstep
+  - _self_
+
+name: "infoLDM_randstep_nuisance_knn"
+method_kwargs:
+  loss_type: "knn"
+optimizer:
+  batch_size: 256

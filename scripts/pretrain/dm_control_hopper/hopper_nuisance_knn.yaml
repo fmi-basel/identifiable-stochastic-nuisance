@@ -1,0 +1,11 @@
+defaults:
+  - hopper_nuisance
+  - _self_
+
+name: "infoLDM_dm_control_hopper_nuisance_knn"
+
+method_kwargs:
+  loss_type: "knn"
+
+optimizer:
+  batch_size: 128

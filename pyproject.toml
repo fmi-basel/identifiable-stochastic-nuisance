@@ -1,0 +1,65 @@
+[project]
+name = "implicit_nuisance"
+version = "0.1.0"
+requires-python = ">=3.10"
+
+dependencies = [
+    "einops",
+    "lightning==2.1.2",
+    "torchmetrics>=0.6.0,<0.12.0",
+    "tqdm",
+    "wandb",
+    "scipy",
+    "timm",
+    "scikit-learn",
+    "umap-learn",
+    "hydra-core",
+    "setuptools<82",
+    "scikit-image>=0.25.2",
+    "matplotlib>=3.10.9",
+    "cmcrameri>=1.10",
+    "dm-control",
+]
+
+[dependency-groups]
+cu118 = [
+    "torch==2.7.1",
+    "torchvision==0.22.1",
+]
+
+cu129 = [
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+]
+
+[tool.uv]
+default-groups = ["cu129"]
+
+conflicts = [
+    [
+        { group = "cu118" },
+        { group = "cu129" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu118", group = "cu118" },
+    { index = "pytorch-cu129", group = "cu129" },
+]
+
+torchvision = [
+    { index = "pytorch-cu118", group = "cu118" },
+    { index = "pytorch-cu129", group = "cu129" },
+]
+dm-control = { path = "../dm_control" }
+
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true

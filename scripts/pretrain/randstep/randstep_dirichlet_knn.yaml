@@ -1,0 +1,7 @@
+defaults:
+  - randstep_dirichlet
+  - _self_
+
+name: "infoLDM_randstep_dirichlet_nuisance_knn"
+method_kwargs:
+  loss_type: "knn"

@@ -1,0 +1,9 @@
+defaults:
+  - causal3dident_environment_semantic
+  - _self_
+
+name: "causal3dident_environment_semantic_logdet"
+method_kwargs:
+  loss_type: "logdet"
+optimizer:
+  batch_size: 64

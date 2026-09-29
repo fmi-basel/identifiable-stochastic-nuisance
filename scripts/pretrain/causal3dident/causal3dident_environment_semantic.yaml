@@ -1,0 +1,95 @@
+defaults:
+  - _self_
+  - wandb: private.yaml
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+
+name: "causal3dident_environment_semantic"
+method: "infoLDM"
+method_kwargs:
+  # Equal signal and code dimensions are required for the nuisance-removal
+  # conclusion in the fixed-covariance Gaussian theorem.
+  state_dim: &state_dim 3
+  input_dim: null
+  encoder_backbone: "resnet18"
+  rnn_hidden_dim: 64
+  rnn_num_layers: 1
+  rnn_backbone: "lstm"
+  loss_type: "logdet"
+  # Gamma = 0.19 I, matching 1 - rho^2 for rho=0.9 below.
+  prediction_variance: 0.19
+  encoder_lr_multiplier: 1.0
+  rnn_lr_multiplier: 1.0
+  predictor_lr_multiplier: 1.0
+
+decoder_kwargs:
+  signal_normal_score:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "signal_normal_score"
+    input_dim: *state_dim
+    output_dim: 3
+    backbone: "linear"
+    lr: 0.0001
+    detach_gradient: true
+
+data:
+  dataset: "causal3dident"
+  num_workers: 8
+  settings:
+    # Directory containing the extracted trainset/ and testset/ directories.
+    root: datasets/Causal3DIdent
+    classes: [0, 1, 2, 3, 4, 5, 6]
+    sequence_length: 2
+    # Exogenous environment roots: spotlight position, spotlight hue,
+    # background hue. The other 7 factors plus class form the nuisance.
+    signal_indices: [6, 8, 9]
+    rho: 0.9
+    transition_std: 0.4358898943540673
+    # Randomly select among nearby renders to sample empirical N | S.
+    k: 16
+    image_size: 224
+    # Train-split channel statistics used by the von Kügelgen implementation.
+    normalization:
+      mean: [0.4327, 0.2689, 0.2839]
+      std: [0.1201, 0.1457, 0.1082]
+    seed: 1
+    # Draw a new Gaussian successor whenever an anchor is revisited.
+    stochastic_transitions: true
+
+optimizer:
+  name: "adam"
+  batch_size: 64
+  lr: 0.0001
+  weight_decay: 0.000001
+
+scheduler:
+  name: "linear"
+  min_lr: 0.000001
+  interval: "epoch"
+
+checkpoint:
+  enabled: true
+  dir: "trained_models"
+  frequency: 1
+  keep_prev: false
+
+auto_resume:
+  enabled: false
+
+# wandb:
+#   enabled: false
+
+seed: 1
+max_epochs: 25
+val_check_interval: 1.0
+devices: [0]
+accelerator: "gpu"
+strategy: "auto"
+precision: "32-true"
+sync_batchnorm: false

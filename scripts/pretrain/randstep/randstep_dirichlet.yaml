@@ -1,0 +1,97 @@
+defaults:
+  - _self_
+  - wandb: private.yaml
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+
+name: "infoLDM_randstep_dirichlet_nuisance_kde"
+method: "infoLDM"
+method_kwargs:
+  # Equal signal and code dimensions are required for nuisance removal.
+  state_dim: &signal_dim 5
+  input_dim: &image_dim 100
+  encoder_backbone: "mlp"
+  encoder_hidden_dim: 200
+  encoder_hidden_layers: 5
+  rnn_hidden_dim: 10
+  rnn_num_layers: 1
+  rnn_backbone: "lstm"
+  conditional_distribution: "dirichlet"
+  loss_type: "kde"
+  # tau = 9K gives conditional mean persistence tau / (tau + K) = 0.9.
+  prediction_precision: 45.0
+  encoder_lr_multiplier: 2.0
+  rnn_lr_multiplier: 20.0
+  predictor_lr_multiplier: 30.0
+
+# Detached online probes are diagnostics only.
+decoder_kwargs:
+  signal:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "signal"
+    input_dim: *signal_dim
+    output_dim: *signal_dim
+    backbone: "linear"
+    lr: 0.001
+    detach_gradient: true
+  nuisance:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "nuisance"
+    input_dim: *signal_dim
+    output_dim: &nuisance_dim 15
+    backbone: "linear"
+    lr: 0.001
+    detach_gradient: true
+
+data:
+  dataset: "randstep_dirichlet_nuisance"
+  num_workers: 4
+  settings:
+    num_train_sequences: 100000
+    num_test_sequences: 10000
+    sequence_length: 5
+    signal_dim: *signal_dim
+    nuisance_dim: *nuisance_dim
+    image_dim: *image_dim
+    transition_precision: 45.0
+    mechanism_seed: 1729
+    seed: 1
+
+optimizer:
+  name: "adam"
+  batch_size: 256
+  lr: 0.0003
+  weight_decay: 0.000001
+
+scheduler:
+  name: "linear"
+  min_lr: 0.00001
+  interval: "epoch"
+
+checkpoint:
+  enabled: true
+  dir: "trained_models"
+  frequency: 1
+  keep_prev: false
+
+auto_resume:
+  enabled: false
+
+wandb:
+  enabled: false
+
+seed: 1
+max_epochs: 20
+val_check_interval: 1.0
+devices: [0]
+accelerator: "gpu"
+strategy: "auto"
+precision: "32-true"
+sync_batchnorm: false

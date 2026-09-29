@@ -1,0 +1,12 @@
+defaults:
+  - randstep
+  - _self_
+
+name: "infoLDM_randstep_nuisance_kde"
+method_kwargs:
+  loss_type: "kde"
+data:
+  settings:
+    num_train_sequences: 5000000
+optimizer:
+  batch_size: 5096

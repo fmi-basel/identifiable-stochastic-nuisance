@@ -1,0 +1,90 @@
+defaults:
+  - _self_
+  - wandb: private.yaml
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .
+
+name: "causal3dident_object_semantic"
+method: "infoLDM"
+method_kwargs:
+  # Object position (3), rotation (3), and hue (1).
+  state_dim: &state_dim 7
+  input_dim: null
+  encoder_backbone: "resnet18"
+  rnn_hidden_dim: 64
+  rnn_num_layers: 1
+  rnn_backbone: "lstm"
+  loss_type: "logdet"
+  prediction_variance: 0.19
+  encoder_lr_multiplier: 1.0
+  rnn_lr_multiplier: 1.0
+  predictor_lr_multiplier: 1.0
+
+decoder_kwargs:
+  signal_normal_score:
+    loss_func: "mse"
+    input_variable: "inferences"
+    target_variable: "signal_normal_score"
+    input_dim: *state_dim
+    output_dim: 7
+    backbone: "linear"
+    lr: 0.0001
+    detach_gradient: true
+
+data:
+  dataset: "causal3dident"
+  num_workers: 8
+  settings:
+    root: datasets/Causal3DIdent
+    classes: [0, 1, 2, 3, 4, 5, 6]
+    sequence_length: 2
+    # Semantic signal: object XYZ, Euler rotation, and object hue.
+    signal_indices: [0, 1, 2, 3, 4, 5, 7]
+    # Sample the environment factors and class jointly conditional on S.
+    class_sampling: "joint_knn"
+    rho: 0.9
+    transition_std: 0.4358898943540673
+    k: 16
+    image_size: 224
+    normalization:
+      mean: [0.4327, 0.2689, 0.2839]
+      std: [0.1201, 0.1457, 0.1082]
+    seed: 1
+    stochastic_transitions: true
+
+optimizer:
+  name: "adam"
+  batch_size: 64
+  lr: 0.0001
+  weight_decay: 0.000001
+
+scheduler:
+  name: "linear"
+  min_lr: 0.000001
+  interval: "epoch"
+
+checkpoint:
+  enabled: true
+  dir: "trained_models"
+  frequency: 1
+  keep_prev: false
+
+auto_resume:
+  enabled: false
+
+wandb:
+  enabled: false
+
+seed: 1
+max_epochs: 25
+val_check_interval: 1.0
+devices: [0]
+accelerator: "gpu"
+strategy: "auto"
+precision: "32-true"
+sync_batchnorm: false
