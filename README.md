@@ -1,6 +1,6 @@
 # Info-LDM
 
-This repository implements the fixed-covariance Gaussian latent predictive model developed in [].
+This repository implements the fixed-covariance Gaussian latent predictive model developed in the paper [Predictive Self-Supervised Learning Provably Identifies Stochastic Signals under Nuisance](https://arxiv.org/abs/2609.37789).
 
 
 ## Installation
